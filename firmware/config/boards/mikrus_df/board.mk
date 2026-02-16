@@ -3,8 +3,7 @@
 PROJECT_CPU = ARCH_STM32H7
 
 # List of all the board related files.
-BOARDCPPSRC = $(BOARD_DIR)/board_configuration.cpp \
-              $(BOARD_DIR)/atwinc_sd_flasher.cpp
+BOARDCPPSRC = $(BOARD_DIR)/board_configuration.cpp
 
 # Error LED is red PE3
 DDEFS += -DLED_CRITICAL_ERROR_BRAIN_PIN=Gpio::E3
@@ -26,6 +25,9 @@ DDEFS += -DBOARD_OTG_NOVBUSSENS=TRUE
 
 # WiFi ATWINC1500 on SPI1
 USE_WIFI = yes
+
+# Enable the SD card bootloader
+SD_BOOTLOADER = yes
 
 DDEFS += -DHW_MIKRUS_DF=1
 

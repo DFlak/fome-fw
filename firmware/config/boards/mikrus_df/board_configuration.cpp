@@ -7,7 +7,7 @@
 
 #include "pch.h"
 
-// 7 injector outputs
+// 8 injector outputs
 static const brain_pin_e injPins[] = {
 	Gpio::D7, // IN1
 	Gpio::B4, // IN2
@@ -16,6 +16,7 @@ static const brain_pin_e injPins[] = {
 	Gpio::B7, // IN5
 	Gpio::B8, // IN6
 	Gpio::B9, // IN7
+	Gpio::A8, // IN8
 };
 
 // 2 ignition outputs
