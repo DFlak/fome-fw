@@ -144,6 +144,10 @@ jobs:
             folder: config/boards/atlas
             ini-file: fome_atlas.ini
 
+          - build-target: mikrus_df
+            folder: config/boards/mikrus_df
+            ini-file: fome_mikrus_df.ini
+
           # - build-target: tdg-pdm8
           #   folder: config/boards/tdg-pdm8
           #   ini-file: fome_tdg-pdm8.ini

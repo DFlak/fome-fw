@@ -99,6 +99,12 @@ pins:
     ts_name: IN7 - Injector 7 (B9)
     type: inj
 
+  - pin: IN8
+    id: A8
+    class: outputs
+    ts_name: IN8 - Injector 8 (A8)
+    type: inj
+
   # ---- Ignition Outputs ----
   - pin: IGN1
     id: D4

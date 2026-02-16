@@ -11,6 +11,12 @@
 #define STM32_LSEDRV 0
 #endif
 
+// By default, use LSE bypass (external oscillator).
+// Boards with a crystal should define FOME_LSE_BYPASS=0.
+#ifndef FOME_LSE_BYPASS
+#define FOME_LSE_BYPASS 1
+#endif
+
 extern "C" void stm32_rtc_init() {
 // Allow backup domain access
 #ifdef STM32F4XX
@@ -19,7 +25,7 @@ extern "C" void stm32_rtc_init() {
 	PWR->CR1 |= PWR_CR1_DBP;
 #endif
 
-	uint32_t lseMode = STM32_LSEDRV | RCC_BDCR_LSEBYP;
+	uint32_t lseMode = STM32_LSEDRV | (FOME_LSE_BYPASS ? RCC_BDCR_LSEBYP : 0);
 	uint32_t lseEnable = RCC_BDCR_LSEON;
 	uint32_t rtcSel = STM32_RTCSEL;
 	uint32_t rtcEn = RCC_BDCR_RTCEN;
@@ -37,7 +43,7 @@ extern "C" void stm32_rtc_init() {
 	RCC->BDCR = 0;
 
 	if (STM32_RTCSEL == STM32_RTCSEL_LSE) {
-		// Enable LSE in bypass mode
+		// Enable LSE (bypass or crystal depending on FOME_LSE_BYPASS)
 		RCC->BDCR |= lseMode;
 		RCC->BDCR |= lseEnable;
 

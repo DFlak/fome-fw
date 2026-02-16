@@ -14,6 +14,10 @@
 
 static bool fs_ready = false;
 
+#if EFI_WIFI
+static const char* wifiSdUpdateResult = "WiFi SD: no card";
+#endif
+
 #if HAL_USE_USB_MSD
 static chibios_rt::BinarySemaphore usbConnectedSemaphore(/* taken =*/true);
 
@@ -51,13 +55,18 @@ bool mountSdFilesystem() {
 	if (mounted) {
 #if EFI_WIFI
 		// Check for WiFi firmware update/dump trigger files on SD card
+		wifiSdUpdateResult = "WiFi SD: mount OK, checking for file...";
 		tryUpdateWifiFirmwareFromSd();
 		tryDumpWifiFirmwareToSd();
+		wifiSdUpdateResult = "WiFi SD: check complete";
 #endif
 		// Unmount — we'll either hand the card to USB or re-mount for logging
 		f_mount(nullptr, "/", 0);
 	} else {
 		efiPrintf("SD card failed to mount filesystem");
+#if EFI_WIFI
+		wifiSdUpdateResult = "WiFi SD: mount FAILED";
+#endif
 	}
 
 #if EFI_WIFI
@@ -74,6 +83,9 @@ bool mountSdFilesystem() {
 	bool hasUsb = usbResult == MSG_OK;
 
 	if (hasUsb) {
+#if EFI_WIFI
+		efiPrintf("%s", wifiSdUpdateResult);
+#endif
 		// Mount the real card to USB
 		attachMsdSdCard(cardBlockDevice);
 
@@ -85,6 +97,9 @@ bool mountSdFilesystem() {
 	// We were able to connect the SD card, mount the filesystem
 	if (f_mount(sd_mem::getFs(), "/", 1) == FR_OK) {
 		efiPrintf("SD card mounted!");
+#if EFI_WIFI
+		efiPrintf("%s", wifiSdUpdateResult);
+#endif
 		fs_ready = true;
 		return true;
 	} else {

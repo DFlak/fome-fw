@@ -22,6 +22,8 @@ DDEFS += -DEFI_SDC_DEVICE=SDCD1
 DDEFS += -DEFI_SDC_MODE=SDC_MODE_1BIT
 DDEFS += -DBOARD_OTG_NOVBUSSENS=TRUE
 
+# 32 KHz crystal on LSE (not an external oscillator), disable bypass mode
+DDEFS += -DFOME_LSE_BYPASS=0
 
 # WiFi ATWINC1500 on SPI1
 USE_WIFI = yes
