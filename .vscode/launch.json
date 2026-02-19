@@ -135,11 +135,57 @@
 			"gdbPath": "${workspaceRoot}/firmware/ext/build-tools/arm-gnu-toolchain-11.3.rel1-x86_64-arm-none-eabi/bin/arm-none-eabi-gdb"
 		},
 		{
+			// Attach to running app after flashing fome.bin with STM32CubeProgrammer.
+			// Workflow:
+			//   1. Flash fome.bin once:  STM32_Programmer_CLI.exe -c port=SWD -w firmware/build/fome.bin 0x08000000 -rst
+			//   2. Let the board boot normally (LEDs come up, console connects)
+			//   3. Launch this config to attach — no reflash, no checksum issue
+			//   4. Hit Pause or set breakpoints and press Continue
+			// For subsequent builds: reflash fome.bin, reset board, reattach.
+			"name": "Attach H743 (remote build)",
+			"type": "cortex-debug",
+			"request": "attach",
+			"cwd": "${workspaceFolder}/firmware",
+			// ELF provides debug symbols only — board must already be running matching firmware
+			"executable": "${workspaceRoot}/firmware/build/fome.elf",
+			"device": "STM32H743V",
+			"v1": false,
+			"svdFile": "${workspaceRoot}/firmware/ext/cmsis-svd/STM32H743x.svd",
+			"servertype": "openocd",
+			"configFiles": ["interface/stlink.cfg", "target/stm32h7x.cfg"],
+			"rtos": "auto",
+			"gdbPath": "arm-none-eabi-gdb",
+			"postAttachCommands": [
+				"set substitute-path /home/dflak/fome-fw C:/Users/dflak/Documents/GitHub/fome-fw"
+			]
+		},
+		{
+			// CAUTION: flashes fome.elf without the OpenBLT checksum — bootloader will
+			// loop forever in update mode (NvmVerifyChecksum fails). Only useful if the
+			// bootloader is not present on the board. Use "Attach H743 (remote build)" instead.
+			"name": "Debug H743 (remote build) [no-bootloader]",
+			"type": "cortex-debug",
+			"request": "launch",
+			"cwd": "${workspaceFolder}/firmware",
+			"executable": "${workspaceRoot}/firmware/build/fome.elf",
+			"device": "STM32H743V",
+			"v1": false,
+			"svdFile": "${workspaceRoot}/firmware/ext/cmsis-svd/STM32H743x.svd",
+			"servertype": "openocd",
+			"configFiles": ["interface/stlink.cfg", "target/stm32h7x.cfg"],
+			"rtos": "auto",
+			"gdbPath": "arm-none-eabi-gdb",
+			"runToEntryPoint": "main",
+			"postLaunchCommands": [
+				"set substitute-path /home/dflak/fome-fw C:/Users/dflak/Documents/GitHub/fome-fw"
+			]
+		},
+		{
 			"name": "Debug Bootloader H743",
 			"type": "cortex-debug",
 			"request": "launch",
 			"cwd": "${workspaceFolder}/firmware",
-			"executable": "${workspaceRoot}/firmware/bootloader/blbuild/fome_bl.elf",
+			"executable": "${workspaceRoot}/firmware/build/fome_bl.elf",
 			"device": "STM32H743V",
 			"v1": false,
 			"svdFile": "${workspaceRoot}/firmware/ext/cmsis-svd/STM32H743x.svd",
@@ -147,6 +193,29 @@
 			"configFiles": ["interface/stlink.cfg", "target/stm32h7x.cfg"],
 			"rtos": "auto",
 			"gdbPath": "${workspaceRoot}/firmware/ext/build-tools/arm-gnu-toolchain-11.3.rel1-x86_64-arm-none-eabi/bin/arm-none-eabi-gdb"
+		},
+		{
+			// Use this to catch a *hanging* bootloader in-flight:
+			// 1. Issue "reboot to bootloader" from FOME Console
+			// 2. Board goes unresponsive
+			// 3. Launch this config — it attaches WITHOUT reflashing
+			// 4. Hit "pause" in the debug toolbar to halt execution and see the call stack
+			"name": "Attach Bootloader H743 (remote build)",
+			"type": "cortex-debug",
+			"request": "attach",
+			"cwd": "${workspaceFolder}/firmware",
+			// Bootloader ELF copied from Linux VM: scp user@vm:.../bootloader/blbuild/fome_bl.elf firmware/build/fome_bl.elf
+			"executable": "${workspaceRoot}/firmware/build/fome_bl.elf",
+			"device": "STM32H743V",
+			"v1": false,
+			"svdFile": "${workspaceRoot}/firmware/ext/cmsis-svd/STM32H743x.svd",
+			"servertype": "openocd",
+			"configFiles": ["interface/stlink.cfg", "target/stm32h7x.cfg"],
+			"rtos": "auto",
+			"gdbPath": "arm-none-eabi-gdb",
+			"postAttachCommands": [
+				"set substitute-path /home/dflak/fome-fw C:/Users/dflak/Documents/GitHub/fome-fw"
+			]
 		}
 	]
 }
