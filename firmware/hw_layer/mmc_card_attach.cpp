@@ -29,37 +29,6 @@ static MMCConfig mmccfg = {NULL, &mmc_ls_spicfg, &mmc_hs_spicfg};
 
 #endif /* HAL_USE_MMC_SPI */
 
-#if !EFI_BOOTLOADER
-// On STM32H7, these objects need their own MPU region if using SDMMC1
-struct {
-	struct {
-		FATFS fs;
-		FIL file;
-		SdLogBufferWriter logBuffer;
-	} usedPart;
-
-	static_assert(sizeof(usedPart) <= 2048);
-
-	// Fill the struct out to a full MPU region
-	uint8_t padding[2048 - sizeof(usedPart)];
-} mmcCardCacheControlledStorage SDMMC_MEMORY(2048);
-
-namespace sd_mem {
-FATFS* getFs() {
-	return &mmcCardCacheControlledStorage.usedPart.fs;
-}
-
-FIL* getLogFileFd() {
-	return &mmcCardCacheControlledStorage.usedPart.file;
-}
-
-SdLogBufferWriter& getLogBuffer() {
-	return mmcCardCacheControlledStorage.usedPart.logBuffer;
-}
-} // namespace sd_mem
-
-#endif // !EFI_BOOTLOADER
-
 #if HAL_USE_MMC_SPI
 /*
  * Attempts to initialize the MMC card.

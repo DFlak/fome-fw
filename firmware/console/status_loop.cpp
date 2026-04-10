@@ -65,6 +65,10 @@ extern bool main_loop_started;
 #include "tle8888.h"
 #endif /* BOARD_TLE8888_COUNT */
 
+#if EFI_USB_SERIAL
+#include "usbconsole.h"
+#endif // EFI_USB_SERIAL
+
 #if EFI_ENGINE_SNIFFER
 #include "engine_sniffer.h"
 extern WaveChart waveChart;
@@ -455,10 +459,6 @@ void updateTunerStudioState() {
 	float rpm = 0;
 #endif /* EFI_SHAFT_POSITION_INPUT */
 
-#if EFI_PROD_CODE
-	executorStatistics();
-#endif /* EFI_PROD_CODE */
-
 	// header
 	tsOutputChannels->tsConfigVersion = TS_FILE_VERSION;
 	static_assert(offsetof(TunerStudioOutputChannels, tsConfigVersion) == TS_FILE_VERSION_OFFSET);
@@ -534,15 +534,6 @@ void updateTunerStudioState() {
 #if HAL_USE_PAL && EFI_PROD_CODE
 	tsOutputChannels->extiOverflowCount = getExtiOverflowCounter();
 #endif
-
-	switch (engineConfiguration->debugMode) {
-		case DBG_TLE8888:
-#if (BOARD_TLE8888_COUNT > 0)
-			tle8888PostState();
-#endif /* BOARD_TLE8888_COUNT */
-			break;
-		default:;
-	}
 }
 
 #endif /* EFI_TUNER_STUDIO */

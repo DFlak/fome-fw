@@ -254,9 +254,6 @@ uint16_t autoscale baseFuel;Base mass of the per-cylinder fuel injected during c
 int16_t rpm;This sets the RPM limit below which the ECU will use cranking fuel and ignition logic, typically this is around 350-450rpm.;"RPM", 1, 0, 0, 3000, 0
 end_struct
 
-#define debug_mode_e_enum "INVALID", "INVALID", "INVALID", "Stepper Idle Control", "INVALID", "INVALID", "INVALID", "INVALID", "INVALID", "INVALID", "INVALID", "INVALID", "INVALID", "INVALID", "INVALID", "INVALID", "INVALID", "Electronic Throttle", "Executor", "INVALID", "INVALID", "INVALID", "INVALID", "INVALID", "INVALID", "INVALID", "INVALID", "INVALID", "Metrics", "INVALID", "INVALID", "TLE8888", "INVALID", "INVALID", "INVALID", "INVALID", "INVALID", "INVALID", "INVALID", "ETB Autotune", "INVALID", "INVALID", "INVALID", "INVALID", "INVALID", "Logic_Analyzer", "INVALID", "INVALID", "Lua"
-custom debug_mode_e 1 bits, U08, @OFFSET@, [0:5], @@debug_mode_e_enum@@
-
 #define vvt_mode_e_enum "Inactive", "Single Tooth", "Toyota 3 Tooth", "Miata NB2", "Miata NA CMP", "Bosch Quick Start", "4/1", "ST 170", "Ford Barra 3+1", "Nissan VQ", "Honda K Intake", "Nissan MR18", "Mitsu 3A92", "VTwin by MAP", "Mitsu 6G75", "Mazda Skyactiv", "Honda K Exhaust", "Mitsubishi 4G92/93/94", "Mitsubishi 4G63", "Mazda L"
 custom vvt_mode_e 1 bits, U08, @OFFSET@, [0:5], @@vvt_mode_e_enum@@
 
@@ -487,6 +484,8 @@ int8_t gapTrackingLengthOverride;How many consecutive gap rations have to match 
  uint16_t minOilPressureAfterStart;Expected oil pressure after starting the engine. If oil pressure does not reach this level within 5 seconds of engine start, fuel will be cut. Set to 0 to disable and always allow starting.;"kPa", 1, 0, 0, 1000, 0
  switch_input_pin_e oilPressureSwitch
  pin_input_mode_e oilPressureSwitchMode
+
+uint8_t autoscale inhibitIdleAfterCrankingTime;Inhibit closed loop idle for this duration after cranking.;"sec", 0.1, 0, 0, 10, 1
 
 angle_t fixedModeTiming;This value is the ignition timing used when in 'fixed timing' mode, i.e. constant timing\nThis mode is useful when adjusting distributor location.;"RPM", 1, 0, 0, 3000, 0
 
@@ -876,7 +875,7 @@ custom idle_mode_e 1 bits, U08, @OFFSET@, [0:0], "Open Loop + Closed Loop", "Ope
 	uint16_t tps2SecondaryMin;;"ADC", 1, 0, 0, 1000, 0
 	uint16_t tps2SecondaryMax;;"ADC", 1, 0, 0, 1000, 0
 
-	bit widebandOnSecondBus,"2","1";Select which bus the wideband controller is attached to.
+	bit unused_widebandOnSecondBus
 	bit fuelClosedLoopCorrectionEnabled;Enables lambda sensor closed loop feedback for fuelling.
 	bit useOilPressureSwitch,"Switch","Sensor"
 	bit boardUseTachPullUp,"12v","5v"
@@ -1029,7 +1028,6 @@ int16_t tps2Max;;"ADC", 1, 0, 0, 1023, 0
 	custom InjectionTimingMode 1 bits, U08, @OFFSET@, [0:1], "End of injection", "Start of injection", "Center of injection"
 	InjectionTimingMode injectionTimingMode;Sets what part of injection's is controlled by the injection phase table.
 
-	debug_mode_e debugMode;See https://wiki.fome.tech/r/debugmode
 	uint8_t fan1ExtraIdle;Additional idle % when fan #1 is active;"%", 1, 0, 0, 100, 0
 
 	float tpsDecelEnleanmentThreshold;For decel we simply multiply delta of TPS and tFor decel we do not use table?!;"roc", 1, 0, 0, 200, 1

@@ -203,67 +203,6 @@ enum class engine_type_e : uint32_t {
 };
 
 /**
- * https://rusefi.com//wiki/index.php?title=Manual:Debug_fields
- */
-typedef enum __attribute__((__packed__)) {
-	DBG_0 = 0,
-	DBG_1 = 1,
-	DBG_2 = 2,
-	DBG_STEPPER_IDLE_CONTROL = 3,
-	DBG_4 = 4,
-	DBG_5 = 5,
-	DBG_6 = 6,
-	DBG_7 = 7,
-	DBG_8 = 8,
-	DBG_9 = 9,
-	DBG_10 = 10,
-	DBG_11 = 11,
-	DBG_12 = 12,
-	DBG_13 = 13,
-	DBG_14 = 14,
-	DBG_15 = 15,
-	DBG_16 = 16,
-	/**
-	 * See also DBG_ELECTRONIC_THROTTLE_EXTRA
-	 */
-	DBG_ELECTRONIC_THROTTLE_PID = 17,
-	DBG_EXECUTOR = 18,
-
-	DBG_19 = 19,
-	DBG_20 = 20,
-	DBG_21 = 21,
-
-	DBG_22 = 22,
-	DBG_23 = 23,
-	DBG_24 = 24,
-	DBG_25 = 25,
-	DBG_26 = 26,
-	DBG_27 = 27,
-	DBG_METRICS = 28,
-	DBG_29 = 29,
-	DBG_30 = 30,
-	DBG_TLE8888 = 31,
-	DBG_32 = 32,
-	DBG_33 = 33,
-	DBG_34 = 34,
-	DBG_35 = 35,
-	DBG_36 = 36,
-	DBG_37 = 37,
-	DBG_38 = 38,
-	DBG_ETB_AUTOTUNE = 39,
-	DBG_40 = 40,
-	DBG_41 = 41,
-	DBG_42 = 42,
-	DBG_43 = 43,
-	DBG_44 = 44,
-	DBG_LOGIC_ANALYZER = 45,
-	DBG_46 = 46,
-	DBG_TCU = 47,
-	DBG_LUA = 48,
-
-} debug_mode_e;
-
-/**
  * @see http://rusefi.com/wiki/index.php?title=Manual:Software:Trigger
  */
 enum class trigger_type_e : uint32_t {
@@ -560,10 +499,13 @@ typedef enum {
 	COMMAND_X14_DISABLE_SELF_STIM = 0x0F,
 	COMMAND_X14_ETB_AUTOTUNE_STOP = 0x10,
 	COMMAND_X14_ETB2_AUTO_CALIBRATE = 0x11,
-	COMMAND_X14_WIDEBAND_FIRMWARE_UPDATE = 0x12,
+	COMMAND_X14_WIDEBAND_UPDATE_0 = 0x12,
 	COMMAND_X14_ENABLE_EXTERNAL_STIM = 0x13,
 	COMMAND_X14_ETB_DISABLE_JAM_DETECT = 0x14,
 	COMMAND_X14_BURN_WITHOUT_FLASH = 0x15,
 	COMMAND_X14_FORCE_RESYNC = 0x16,
 	COMMAND_X14_SPLIT_INJ = 0x17,
+	COMMAND_X14_WIDEBAND_UPDATE_1 = 0x18,
+	COMMAND_X14_WIDEBAND_UPDATE_2 = 0x19,
+	COMMAND_X14_WIDEBAND_UPDATE_3 = 0x1A,
 } command_x14_e;
