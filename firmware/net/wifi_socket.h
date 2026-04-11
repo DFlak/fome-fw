@@ -11,7 +11,7 @@ struct sockaddr_in;
 
 class ServerSocket {
 public:
-	ServerSocket();
+	ServerSocket(const char* name);
 
 	// User functions: listen, recv, send, close
 	void startListening(const sockaddr_in& addr);
@@ -73,4 +73,5 @@ private:
 	// Linked list of all server sockets
 	static ServerSocket* s_serverList;
 	ServerSocket* m_nextServer = nullptr;
+	const char* m_name;
 };

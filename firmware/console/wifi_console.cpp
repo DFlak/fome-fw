@@ -69,7 +69,7 @@ private:
 	size_t m_writeSize = 0;
 };
 
-static NO_CACHE ServerSocket tsServer;
+static NO_CACHE ServerSocket tsServer("TS");
 static NO_CACHE WifiChannel wifiChannel(tsServer);
 
 static volatile bool s_tsListeningReady = false;
@@ -84,7 +84,7 @@ static void startTsListening() {
 	// Start listening on the socket
 	sockaddr_in address;
 	address.sin_family = AF_INET;
-	address.sin_port = _htons(29000);
+	address.sin_port = _htons(29001);
 	address.sin_addr.s_addr = 0;
 
 	tsServer.startListening(address);

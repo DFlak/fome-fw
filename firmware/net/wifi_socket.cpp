@@ -11,7 +11,7 @@ static chibios_rt::BinarySemaphore isrSemaphore(/* taken =*/true);
 
 /*static*/ ServerSocket* ServerSocket::s_serverList = nullptr;
 
-ServerSocket::ServerSocket() {
+ServerSocket::ServerSocket(const char* name) : m_name(name) {
 	// Add server to linked list
 	m_nextServer = s_serverList;
 	s_serverList = this;
@@ -22,6 +22,7 @@ ServerSocket::ServerSocket() {
 
 void ServerSocket::startListening(const sockaddr_in& addr) {
 	m_listenerSocket = socket(AF_INET, SOCK_STREAM, SOCKET_CONFIG_SSL_OFF);
+	efiPrintf("WiFi: [%s] Listener socket %d for port %d", m_name, m_listenerSocket, _ntohs(addr.sin_port));
 	bind(m_listenerSocket, (sockaddr*)&addr, sizeof(addr));
 }
 
@@ -36,7 +37,7 @@ void ServerSocket::onAccept(int connectedSocket) {
 	// If we already have a socket, close the old one before accepting the new one.
 	// This prevents leaking hardware sockets in the ATWINC1500 and wakes up any
 	// threads stuck in a pending send on the old link.
-	efiPrintf("WiFi: Accepting sock %d (replaces %d)", connectedSocket, (int)m_connectedSocket);
+	efiPrintf("WiFi: [%s] Accepting sock %d (replaces %d)", m_name, connectedSocket, (int)m_connectedSocket);
 
 	if (m_connectedSocket != -1) {
 		closeSocket();
@@ -64,7 +65,7 @@ void ServerSocket::onAccept(int connectedSocket) {
 bool ServerSocket::closeSocket() {
 	bool wasOpen = m_connectedSocket != -1;
 	if (wasOpen) {
-		efiPrintf("WiFi: Closing sock %d", (int)m_connectedSocket);
+		efiPrintf("WiFi: [%s] Closing sock %d", m_name, (int)m_connectedSocket);
 		close(m_connectedSocket);
 		m_connectedSocket = -1;
 	}
@@ -209,7 +210,7 @@ bool ServerSocket::trySendImpl() {
 			return false;
 		} else {
 			// Permanent error?
-			efiPrintf("WiFi: send error %d on sock %d", (int)result, m_connectedSocket);
+			efiPrintf("WiFi: [%s] send error %d on sock %d", m_name, (int)result, m_connectedSocket);
 			// Wake up the caller so they aren't deadlocked; they'll detect the error on next operation
 			closeSocket();
 			return true;
@@ -238,7 +239,7 @@ bool ServerSocket::tryRecvImpl() {
 				// Rare for recv, but retry later
 				return false;
 			} else {
-				efiPrintf("WiFi: recv error %d on sock %d", (int)result, m_connectedSocket);
+				efiPrintf("WiFi: [%s] recv error %d on sock %d", m_name, (int)result, m_connectedSocket);
 				// Treat as a fatal socket error: close now so the TS thread sees
 				// isReady()==false immediately rather than retrying every 10ms.
 				closeSocket();
@@ -284,11 +285,15 @@ static void socketCallback(SOCKET sock, uint8_t u8Msg, void* pvMsg) {
 			auto bindMsg = reinterpret_cast<tstrSocketBindMsg*>(pvMsg);
 			if (bindMsg && bindMsg->status == 0) {
 				// Socket bind complete, now listen!
-				listen(sock, 1);
+				// A backlog of 3 helps handle rapid discovery's from the console's Port Scanner.
+				listen(sock, 3);
 			}
 		} break;
 		case SOCKET_MSG_LISTEN: {
-			// no-op, accept() is implicit
+			auto listenMsg = reinterpret_cast<tstrSocketListenMsg*>(pvMsg);
+			if (listenMsg && listenMsg->status != 0) {
+				efiPrintf("WiFi: Listen failed on sock %d with %d", (int)sock, (int)listenMsg->status);
+			}
 		} break;
 		case SOCKET_MSG_ACCEPT: {
 			auto acceptMsg = reinterpret_cast<tstrSocketAcceptMsg*>(pvMsg);
@@ -303,6 +308,9 @@ static void socketCallback(SOCKET sock, uint8_t u8Msg, void* pvMsg) {
 
 				if (auto server = ServerSocket::findListener(sock)) {
 					server->onAccept(acceptMsg->sock);
+				} else {
+					efiPrintf("WiFi: No listener for sock %d", (int)sock);
+					close(acceptMsg->sock);
 				}
 			}
 		} break;

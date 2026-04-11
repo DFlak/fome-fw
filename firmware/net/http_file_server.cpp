@@ -891,7 +891,7 @@ static void handleRequest(ServerSocket& sock) {
 // Server thread
 // ---------------------------------------------------------------------------
 
-static NO_CACHE ServerSocket httpServer;
+static NO_CACHE ServerSocket httpServer("HTTP");
 
 class HttpFileServerThread : public ThreadController<8192> {
 public:
