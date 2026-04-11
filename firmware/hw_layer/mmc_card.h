@@ -23,6 +23,8 @@ void unmountSdFilesystem();
 const char* getActiveLogFileName();
 
 void onUsbConnectedNotifyMmcI();
+void onUsbDisconnectedNotifyMmcI();
+bool isSdCardMounted();
 
 // Implemented in firmware by reading from engineConfiguration
 // Implemented in bootloader with defines (bootloader has no config!)

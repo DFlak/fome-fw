@@ -40,6 +40,11 @@ struct DmaBufferContents {
 
 #if HAL_USE_USB_MSD
 	uint8_t sdBlockBuffer[MMCSD_BLOCK_SIZE];
+	uint8_t msdIniBlockBuffer[MMCSD_BLOCK_SIZE];
+#endif
+
+#if EFI_WIFI
+	HttpBuffer http;
 #endif
 };
 
@@ -78,6 +83,14 @@ uint8_t* sdCardBlockBuffer() {
 #endif
 }
 
+uint8_t* msdIniBlockBuffer() {
+#if HAL_USE_USB_MSD
+	return dmaBufferRegion.contents.msdIniBlockBuffer;
+#else
+	return nullptr;
+#endif
+}
+
 #if EFI_FILE_LOGGING
 FATFS* fs() {
 	return &dmaBufferRegion.contents.fs;
@@ -91,6 +104,12 @@ SdLogBufferWriter& logBuffer() {
 	return dmaBufferRegion.contents.logBuffer;
 }
 #endif // EFI_FILE_LOGGING
+
+#if EFI_WIFI
+HttpBuffer* http() {
+	return &dmaBufferRegion.contents.http;
+}
+#endif // EFI_WIFI
 
 } // namespace dma_buffers
 

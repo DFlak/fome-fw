@@ -398,6 +398,11 @@ static void usb_event(USBDriver *usbp, usbevent_t event) {
 		/* Disconnection event on suspend.*/
 		sduSuspendHookI(&SDU1);
 
+		#if HAL_USE_USB_MSD
+			// Notify the MMC thread that USB storage is no longer active
+			onUsbDisconnectedNotifyMmcI();
+		#endif
+
 		chSysUnlockFromISR();
 		return;
 	case USB_EVENT_WAKEUP:

@@ -12,6 +12,7 @@
 #if EFI_FILE_LOGGING && EFI_PROD_CODE
 
 #include "mmc_card.h"
+#include "dma_buffers.h"
 
 #if HAL_USE_MMC_SPI
 // Don't re-read SD card spi device after boot - it could change mid transaction (TS thread could preempt),
@@ -100,21 +101,14 @@ BaseBlockDevice* initializeMmcBlockDevice() {
 
 #if defined(STM32H7XX)
 	/* 
-	 * Configure MPU region for AXI SRAM (0x24000000) to be non-cacheable.
+	 * Configure MPU region for all buffers that require cache-coherent access.
 	 * This is required for SDMMC1 IDMA, which bypasses the D-Cache.
 	 * We do this BEFORE sdcStart/sdcConnect to ensure all initialization
 	 * handshakes are coherent.
 	 */
-	chSysLock();
-	mpuConfigureRegion(MPU_REGION_5, (void*)0x24000000,
-				MPU_RASR_SIZE_512K | MPU_RASR_ATTR_AP_RW_RW | MPU_RASR_ATTR_NON_CACHEABLE | MPU_RASR_ATTR_S | MPU_RASR_ENABLE);
-	chSysUnlock();
-	mpuEnable(MPU_CTRL_PRIVDEFENA);
-
-	/* Ensure no stale data remains in cache before SDMMC accesses it */
-	SCB_CleanInvalidateDCache();
-
-	efiPrintf("SDC: MPU region 5 (AXI SRAM) configured as non-cacheable for IDMA");
+#if !EFI_BOOTLOADER
+	dma_buffers::initMpu();
+#endif
 #endif
 
 	sdcStart(&EFI_SDC_DEVICE, &sdcConfig);

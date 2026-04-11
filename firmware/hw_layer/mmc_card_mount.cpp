@@ -3,6 +3,8 @@
 #if EFI_FILE_LOGGING && EFI_PROD_CODE
 
 #include "mmc_card.h"
+#include "dma_buffers.h"
+
 
 #include "ff.h"
 #include "mass_storage_init.h"
@@ -11,11 +13,25 @@ static bool fs_ready = false;
 
 #if HAL_USE_USB_MSD
 static chibios_rt::BinarySemaphore usbConnectedSemaphore(/* taken =*/true);
+static chibios_rt::BinarySemaphore usbDisconnectedSemaphore(/* taken =*/true);
 
 void onUsbConnectedNotifyMmcI() {
+	// Reset the disconnect semaphore so any USB_EVENT_RESET that fired during
+	// enumeration (before SET_CONFIGURATION) doesn't immediately expire the session.
+	usbDisconnectedSemaphore.resetI(true);
 	usbConnectedSemaphore.signalI();
 }
+
+void onUsbDisconnectedNotifyMmcI() {
+	usbDisconnectedSemaphore.signalI();
+}
+#else
+void onUsbDisconnectedNotifyMmcI() {}
 #endif /* HAL_USE_USB_MSD */
+
+bool isSdCardMounted() {
+	return fs_ready;
+}
 
 bool mountSdFilesystem() {
 	auto cardBlockDevice = initializeMmcBlockDevice();
@@ -36,19 +52,24 @@ bool mountSdFilesystem() {
 
 	bool hasUsb = usbResult == MSG_OK;
 
-	// If we have a device AND USB is connected, mount the card to USB, otherwise
-	// mount the null device and try to mount the filesystem ourselves
+	// If we have a device AND USB is connected, mount the card to USB, then wait
+	// for USB to disconnect before reclaiming the card and mounting FatFS.
 	if (cardBlockDevice && hasUsb) {
 		// Mount the real card to USB
 		attachMsdSdCard(cardBlockDevice);
+		efiPrintf("SD card attached to USB MSD");
 
-		// At this point we're done: don't try to write files ourselves
-		return false;
+		// Block until USB disconnects (or the device is reset)
+		usbDisconnectedSemaphore.wait(TIME_INFINITE);
+
+		// USB is gone — swap LUN 1 back to null device and reclaim the card
+		detachMsdSdCard();
+		efiPrintf("USB MSD disconnected, remounting SD card as filesystem");
 	}
 #endif
 
 	// We were able to connect the SD card, mount the filesystem
-	FRESULT fres = f_mount(sd_mem::getFs(), "/", 1);
+	FRESULT fres = f_mount(dma_buffers::fs(), "/", 1);
 	if (fres == FR_OK) {
 		efiPrintf("SD card mounted!");
 		fs_ready = true;

@@ -3,6 +3,7 @@
 #include "mass_storage_init.h"
 #include "mass_storage_device.h"
 #include "null_device.h"
+#include "dma_buffers.h"
 
 #if HAL_USE_USB_MSD
 
@@ -39,8 +40,8 @@ USBDriver* usb_driver = &USBD2;
 #endif
 
 // One block buffer per LUN
-static NO_CACHE uint8_t blkbufIni[MMCSD_BLOCK_SIZE];
-static SDMMC_MEMORY(MMCSD_BLOCK_SIZE) uint8_t blkbufSdmmc[MMCSD_BLOCK_SIZE];
+// dma_buffers::sdCardBlockBuffer() used for LUN 1 (SD Card)
+// dma_buffers::msdIniBlockBuffer() used for LUN 0 (INI Drive)
 
 static CCM_OPTIONAL MassStorageController msd(usb_driver);
 
@@ -71,11 +72,20 @@ static const scsi_inquiry_response_t sdCardInquiry = {
 		{'v', CH_KERNEL_MAJOR + '0', '.', CH_KERNEL_MINOR + '0'}};
 
 void attachMsdSdCard(BaseBlockDevice* blkdev) {
-	msd.attachLun(1, blkdev, blkbufSdmmc, &sdCardInquiry, nullptr);
+	msd.attachLun(1, blkdev, dma_buffers::sdCardBlockBuffer(), &sdCardInquiry, nullptr);
 
 #if EFI_TUNER_STUDIO
 	// SD MSD attached, enable indicator in TS
 	engine->outputChannels.sd_msd = true;
+#endif
+}
+
+void detachMsdSdCard() {
+	// Swap LUN 1 back to the null device so the MSD thread serves nothing
+	msd.attachLun(1, (BaseBlockDevice*)&ND1, dma_buffers::sdCardBlockBuffer(), &sdCardInquiry, nullptr);
+
+#if EFI_TUNER_STUDIO
+	engine->outputChannels.sd_msd = false;
 #endif
 }
 
@@ -108,33 +118,15 @@ static BaseBlockDevice* getRamdiskDevice() {
 }
 
 void initUsbMsd() {
-// STM32H7 SDMMC1 needs the filesystem object to be in AXI
-// SRAM, but excluded from the cache
-#ifdef STM32H7XX
-	{
-		void* base = &blkbufSdmmc;
-		static_assert(sizeof(blkbufSdmmc) == 512);
-		uint32_t size = MPU_RASR_SIZE_512;
-
-		chSysLock();
-		mpuConfigureRegion(
-				MPU_REGION_4,
-				base,
-				MPU_RASR_ATTR_AP_RW_RW | MPU_RASR_ATTR_NON_CACHEABLE | MPU_RASR_ATTR_S | size | MPU_RASR_ENABLE);
-		chSysUnlock();
-		mpuEnable(MPU_CTRL_PRIVDEFENA);
-
-		/* Invalidating data cache to make sure that the MPU settings are taken
-		immediately.*/
-		SCB_CleanInvalidateDCache();
-	}
-#endif
+	// Ensure the DMA buffer region is marked non-cacheable before any DMA-backed
+	// block transfers begin. This is idempotent, so safe to call multiple times.
+	dma_buffers::initMpu();
 
 	// Attach the ini ramdisk
-	msd.attachLun(0, getRamdiskDevice(), blkbufIni, &iniDriveInquiry, nullptr);
+	msd.attachLun(0, getRamdiskDevice(), dma_buffers::msdIniBlockBuffer(), &iniDriveInquiry, nullptr);
 
 	// attach a null device in place of the SD card for now - the SD thread may replace it later
-	msd.attachLun(1, (BaseBlockDevice*)&ND1, blkbufSdmmc, &sdCardInquiry, nullptr);
+	msd.attachLun(1, (BaseBlockDevice*)&ND1, dma_buffers::sdCardBlockBuffer(), &sdCardInquiry, nullptr);
 
 	// start the mass storage thread
 	msd.startThread();

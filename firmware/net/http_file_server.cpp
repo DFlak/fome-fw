@@ -10,13 +10,15 @@
 
 #if EFI_WIFI && !EFI_BOOTLOADER
 
-#include "http_file_server.h"
+#include <cstring>
+#include "ff.h"
+#include "dma_buffers.h"
 #include "wifi_socket.h"
 #include "thread_controller.h"
 #include "mmc_card.h"
-
 #include "socket/include/socket.h"
-#include "ff.h"
+
+void waitForTsListening();
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -38,27 +40,20 @@ struct HttpStorage {
 };
 
 #if defined(STM32H7XX)
-struct {
-	HttpStorage usedPart;
-	static_assert(sizeof(usedPart) <= 8192);
-	uint8_t padding[8192 - sizeof(usedPart)];
-} httpCacheStorage __attribute__((aligned(8192)));
-
-#define s_fil (httpCacheStorage.usedPart.file)
-#define s_reqBuf (httpCacheStorage.usedPart.reqBuf)
-#define s_fileBuf (httpCacheStorage.usedPart.fileBuf)
-#define s_httpOut (httpCacheStorage.usedPart.httpOut)
+#define s_fil     (dma_buffers::http()->file)
+#define s_reqBuf  (dma_buffers::http()->reqBuf)
+#define s_fileBuf (dma_buffers::http()->fileBuf)
+#define s_httpOut (dma_buffers::http()->httpOut)
 #else
-static HttpStorage httpCacheStorage;
-
-#define s_fil (httpCacheStorage.file)
-#define s_reqBuf (httpCacheStorage.reqBuf)
-#define s_fileBuf (httpCacheStorage.fileBuf)
-#define s_httpOut (httpCacheStorage.httpOut)
+static HttpStorage s_storage;
+#define s_fil     (s_storage.file)
+#define s_reqBuf  (s_storage.reqBuf)
+#define s_fileBuf (s_storage.fileBuf)
+#define s_httpOut (s_storage.httpOut)
 #endif
 
 static char    s_urlPath[MAX_PATH_LEN]; // parsed URL path
-static char    s_lineBuf[320];          // scratch for HTML line generation
+static char    s_lineBuf[1024];         // scratch for HTML line generation
 static size_t  s_httpOutPos = 0;
 
 // POST body preamble: bytes that were read as part of header parsing
@@ -289,6 +284,8 @@ static const char CSS[] =
 	"a{color:#38bdf8;text-decoration:none}a:hover{text-decoration:underline}"
 	".dir{color:#5eead4}"
 	"#prog{display:none;margin:8px 0;color:#5eead4;font-size:.85em}"
+	".del{color:#ef4444;border-color:#451a1a;padding:4px 8px;margin-left:4px}"
+	".del:hover{background:#451a1a}"
 	"</style>";
 
 // ---- JavaScript for sorting + upload ----
@@ -322,6 +319,21 @@ static const char JS[] =
 	"x.onerror=function(){p.textContent='Upload failed (network error)';};"
 	"x.send(f);"
 	"}"
+	"function del(p){"
+	"if(!confirm('Delete '+p+'?'))return;"
+	"var x=new XMLHttpRequest();"
+	"x.open('GET','/delete?path='+encodeURIComponent(p));"
+	"x.onload=function(){location.reload();};"
+	"x.send();"
+	"}"
+	"function mkd(){"
+	"var n=prompt('New Folder Name:');"
+	"if(!n)return;"
+	"var x=new XMLHttpRequest();"
+	"x.open('GET','/mkdir?dir='+encodeURIComponent(document.getElementById('cd').value)+'&name='+encodeURIComponent(n));"
+	"x.onload=function(){location.reload();};"
+	"x.send();"
+	"}"
 	"</script>";
 
 /**
@@ -332,7 +344,15 @@ static void serveDirectoryListing(ServerSocket& sock, const char* path,
 	DIR dir;
 	FILINFO fno;
 
-	if (f_opendir(&dir, path) != FR_OK) {
+	char normalizedPath[MAX_PATH_LEN];
+	strncpy(normalizedPath, path, sizeof(normalizedPath));
+	normalizedPath[sizeof(normalizedPath) - 1] = '\0';
+	size_t nlen = strlen(normalizedPath);
+	if (nlen > 1 && normalizedPath[nlen - 1] == '/') {
+		normalizedPath[nlen - 1] = '\0';
+	}
+
+	if (f_opendir(&dir, (nlen > 1) ? normalizedPath : "/") != FR_OK) {
 		sendNotFound(sock);
 		return;
 	}
@@ -351,7 +371,7 @@ static void serveDirectoryListing(ServerSocket& sock, const char* path,
 	httpWrite(sock, "</head><body>");
 
 	// --- Title ---
-	httpWriteFmt(sock, "<h1>FOME SD Card &mdash; %s</h1>", urlPath);
+	httpWriteFmt(sock, "<h1>FOME SD Card [v3] &mdash; %s</h1>", urlPath);
 
 	// --- Toolbar: parent link + upload ---
 	httpWrite(sock, "<div class=\"bar\">");
@@ -375,6 +395,7 @@ static void serveDirectoryListing(ServerSocket& sock, const char* path,
 	httpWrite(sock,
 		"<input type=\"file\" id=\"uf\" style=\"font-size:.85em\">"
 		"<button class=\"btn\" onclick=\"upl()\">Upload</button>"
+		"<button class=\"btn\" onclick=\"mkd()\">+ Folder</button>"
 		"<button class=\"btn\" onclick=\"location.reload()\">Refresh</button>"
 		"</div>"
 		"<div id=\"prog\"></div>");
@@ -385,6 +406,7 @@ static void serveDirectoryListing(ServerSocket& sock, const char* path,
 		"<th onclick=\"srt('n')\">Name &#x25B4;&#x25BE;</th>"
 		"<th onclick=\"srt('d')\" style=\"min-width:120px\">Date &#x25B4;&#x25BE;</th>"
 		"<th onclick=\"srt('s')\" class=\"r\">Size &#x25B4;&#x25BE;</th>"
+		"<th style=\"width:60px\">Action</th>"
 		"</tr></thead><tbody id=\"ft\">");
 
 	// --- Directory entries ---
@@ -403,19 +425,23 @@ static void serveDirectoryListing(ServerSocket& sock, const char* path,
 			httpWriteFmt(sock,
 				"<tr class=\"f\" data-n=\"%s\" data-d=\"%s\" data-s=\"-1\">"
 				"<td><a class=\"dir\" href=\"%s%s/\">%s/</a></td>"
-				"<td class=\"d\">%s</td><td class=\"r\">&mdash;</td></tr>",
+				"<td class=\"d\">%s</td><td class=\"r\">&mdash;</td>"
+				"<td><button class=\"btn del\" onclick=\"del('%s%s/')\">&times;</button></td></tr>",
 				fno.fname, dateStr,
-				urlPath, fno.fname, fno.fname,
-				dateStr);
+				(urlPath[1] == '\0') ? "" : urlPath, fno.fname, fno.fname,
+				dateStr,
+				(urlPath[1] == '\0') ? "" : urlPath, fno.fname);
 		} else {
 			formatSize(sizeStr, sizeof(sizeStr), (uint32_t)fno.fsize);
 			httpWriteFmt(sock,
 				"<tr class=\"f\" data-n=\"%s\" data-d=\"%s\" data-s=\"%u\">"
 				"<td><a href=\"%s%s\">%s</a></td>"
-				"<td class=\"d\">%s</td><td class=\"r\">%s</td></tr>",
+				"<td class=\"d\">%s</td><td class=\"r\">%s</td>"
+				"<td><button class=\"btn del\" onclick=\"del('%s%s')\">&times;</button></td></tr>",
 				fno.fname, dateStr, (unsigned)fno.fsize,
-				urlPath, fno.fname, fno.fname,
-				dateStr, sizeStr);
+				(urlPath[1] == '\0') ? "" : urlPath, fno.fname, fno.fname,
+				dateStr, sizeStr,
+				(urlPath[1] == '\0') ? "" : urlPath, fno.fname);
 		}
 	}
 
@@ -572,6 +598,7 @@ static void handleUpload(ServerSocket& sock) {
 		(unsigned)s_contentLength, (unsigned)s_bodyPreambleLen);
 
 	uint32_t remaining = s_contentLength;
+	uint32_t bytesSinceSync = 0;
 	bool writeError = false;
 
 	// First write any body bytes already read during header parsing
@@ -583,6 +610,7 @@ static void handleUpload(ServerSocket& sock) {
 					toWrite, &written) != FR_OK) {
 			writeError = true;
 		}
+		bytesSinceSync += written;
 		remaining -= toWrite;
 	}
 
@@ -619,6 +647,13 @@ static void handleUpload(ServerSocket& sock) {
 			writeError = true;
 			break;
 		}
+		
+		bytesSinceSync += written;
+		if (bytesSinceSync >= 1024 * 1024) {
+			f_sync(&s_fil);
+			bytesSinceSync = 0;
+		}
+
 		remaining -= got;
 	}
 
@@ -649,11 +684,140 @@ static void handleUpload(ServerSocket& sock) {
 // Request dispatcher
 // ---------------------------------------------------------------------------
 
+/**
+ * Handle a request to delete a file or directory.
+ * URL format: GET /delete?path=/path/to/item
+ */
+static void handleDelete(ServerSocket& sock) {
+	char* path = strstr(s_urlPath, "path=");
+	if (!path) {
+		sendBadRequest(sock);
+		return;
+	}
+	path += 5; // skip "path="
+	urlDecodeInPlace(path);
+
+	// Strip trailing slash — directories are passed as "/dir/" from the UI
+	// but f_unlink rejects paths with a trailing slash (FR_INVALID_NAME).
+	size_t pathLen = strlen(path);
+	if (pathLen > 1 && path[pathLen - 1] == '/') {
+		path[pathLen - 1] = '\0';
+	}
+
+	efiPrintf("HTTP: deleting %s", path);
+
+	// Security: check active log (cannot delete)
+	const char* activeLog = getActiveLogFileName();
+	if (activeLog && strstr(path, activeLog)) {
+		sendBadRequest(sock); // forbidden
+		return;
+	}
+
+	FRESULT res = f_unlink(path);
+	if (res == FR_OK) {
+		httpWrite(sock, "HTTP/1.0 200 OK\r\nConnection: close\r\n\r\nOK");
+	} else {
+		efiPrintf("HTTP delete failed: %d", (int)res);
+		httpWrite(sock, "HTTP/1.0 500 Internal Server Error\r\nConnection: close\r\n\r\nFailed");
+	}
+	httpFlush(sock);
+}
+
+/**
+ * Handle a request to create a directory.
+ * URL format: GET /mkdir?dir=/path/&name=foldername
+ */
+static void handleMkdir(ServerSocket& sock) {
+	char* queryStr = strchr(s_urlPath, '?');
+	if (!queryStr) {
+		sendBadRequest(sock);
+		return;
+	}
+	queryStr++;
+
+	char dirPath[MAX_PATH_LEN] = "/";
+	char name[64] = "";
+
+	char* p = queryStr;
+	while (p && *p) {
+		if (strncmp(p, "dir=", 4) == 0) {
+			p += 4;
+			char* end = strchr(p, '&');
+			size_t len = end ? (size_t)(end - p) : strlen(p);
+			if (len >= sizeof(dirPath)) len = sizeof(dirPath) - 1;
+			memcpy(dirPath, p, len);
+			dirPath[len] = '\0';
+			p = end ? end + 1 : nullptr;
+		} else if (strncmp(p, "name=", 5) == 0) {
+			p += 5;
+			char* end = strchr(p, '&');
+			size_t len = end ? (size_t)(end - p) : strlen(p);
+			if (len >= sizeof(name)) len = sizeof(name) - 1;
+			memcpy(name, p, len);
+			name[len] = '\0';
+			p = end ? end + 1 : nullptr;
+		} else {
+			char* end = strchr(p, '&');
+			p = end ? end + 1 : nullptr;
+		}
+	}
+
+	urlDecodeInPlace(dirPath);
+	urlDecodeInPlace(name);
+
+	char fullPath[MAX_PATH_LEN + 64];
+	size_t dlen = strlen(dirPath);
+	if (dlen > 0 && dirPath[dlen - 1] != '/') {
+		chsnprintf(fullPath, sizeof(fullPath), "%s/%s", dirPath, name);
+	} else {
+		chsnprintf(fullPath, sizeof(fullPath), "%s%s", dirPath, name);
+	}
+
+	efiPrintf("HTTP: mkdir %s", fullPath);
+
+	FRESULT res = f_mkdir(fullPath);
+	if (res == FR_OK) {
+		httpWrite(sock, "HTTP/1.0 200 OK\r\nConnection: close\r\n\r\nOK");
+	} else {
+		efiPrintf("HTTP mkdir failed: %d", (int)res);
+		httpWrite(sock, "HTTP/1.0 500 Internal Server Error\r\nConnection: close\r\n\r\nFailed");
+	}
+	httpFlush(sock);
+}
+
+static void sendUsbStoragePage(ServerSocket& sock) {
+	httpWrite(sock,
+		"HTTP/1.0 503 Service Unavailable\r\n"
+		"Connection: close\r\n"
+		"Content-Type: text/html\r\n\r\n"
+		"<html><head>"
+		"<meta http-equiv='refresh' content='5'>"
+		"<style>"
+		"body{font-family:system-ui,sans-serif;background:#0f0f1a;color:#d4d4d4;"
+		"display:flex;align-items:center;justify-content:center;height:100vh;margin:0}"
+		".box{text-align:center;padding:40px;border:1px solid #334155;border-radius:12px}"
+		"h1{color:#5eead4}p{color:#94a3b8}"
+		"</style></head><body>"
+		"<div class='box'>"
+		"<h1>SD Card in USB Storage Mode</h1>"
+		"<p>The SD card is currently attached to the USB host.</p>"
+		"<p>Disconnect the USB cable to use the WiFi file browser.</p>"
+		"<p><small>This page refreshes automatically every 5 seconds.</small></p>"
+		"</div></body></html>\r\n");
+	httpFlush(sock);
+}
+
 static void handleRequest(ServerSocket& sock) {
 	s_httpOutPos = 0;
 
 	if (!readRequest(sock)) {
 		sendBadRequest(sock);
+		return;
+	}
+
+	// If SD card is in USB MSD mode, FatFS is not available — show informative page
+	if (!isSdCardMounted()) {
+		sendUsbStoragePage(sock);
 		return;
 	}
 
@@ -665,6 +829,16 @@ static void handleRequest(ServerSocket& sock) {
 		} else {
 			sendNotFound(sock);
 		}
+		return;
+	}
+
+	// --- GET requests: match against command endpoints (path may have query string) ---
+	if (strncmp(s_urlPath, "/delete", 7) == 0) {
+		handleDelete(sock);
+		return;
+	}
+	if (strncmp(s_urlPath, "/mkdir", 6) == 0) {
+		handleMkdir(sock);
 		return;
 	}
 
@@ -683,7 +857,6 @@ static void handleRequest(ServerSocket& sock) {
 		return;
 	}
 
-	// --- GET requests ---
 	if (s_method != HTTP_GET) {
 		sendBadRequest(sock);
 		return;

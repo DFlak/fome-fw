@@ -26,16 +26,29 @@ void ServerSocket::startListening(const sockaddr_in& addr) {
 }
 
 void ServerSocket::onAccept(int connectedSocket) {
-	// If we're busy handling a request, reject the new connection.
-	// This prevents clobbering the active socket mid-send (e.g. when
-	// a browser opens a parallel connection for /favicon.ico).
+	// If we're busy handling a request (e.g. HTTP POST), reject the new connection.
+	// This prevents clobbering the active socket mid-send.
 	if (m_busy) {
 		close(connectedSocket);
 		return;
 	}
 
+	// If we already have a socket, close the old one before accepting the new one.
+	// This prevents leaking hardware sockets in the ATWINC1500 and wakes up any
+	// threads stuck in a pending send on the old link.
+	efiPrintf("WiFi: Accepting sock %d (replaces %d)", connectedSocket, (int)m_connectedSocket);
+
+	if (m_connectedSocket != -1) {
+		closeSocket();
+	}
+
 	m_connectedSocket = connectedSocket;
 	m_sendRequest = false;
+
+	{
+		chibios_rt::CriticalSectionLocker csl;
+		m_sendDoneSemaphore.resetI(true);
+	}
 
 #if !EFI_BOOTLOADER
 	m_remainingRecv = 0;
@@ -50,9 +63,11 @@ void ServerSocket::onAccept(int connectedSocket) {
 
 bool ServerSocket::closeSocket() {
 	bool wasOpen = m_connectedSocket != -1;
-	close(m_connectedSocket);
-
-	m_connectedSocket = -1;
+	if (wasOpen) {
+		efiPrintf("WiFi: Closing sock %d", (int)m_connectedSocket);
+		close(m_connectedSocket);
+		m_connectedSocket = -1;
+	}
 
 #if !EFI_BOOTLOADER
 	m_recvActive = false;
@@ -61,6 +76,14 @@ bool ServerSocket::closeSocket() {
 	{
 		chibios_rt::CriticalSectionLocker csl;
 		iqResetI(&m_recvQueue);
+
+		// Any thread waiting on m_sendDoneSemaphore (in send()) needs to be woken up,
+		// otherwise they will deadlock forever waiting for a hardware confirmation
+		// that will never come for a closed socket.
+		// We use resetI(true) to wake them up with MSG_RESET and ensure the
+		// semaphore is in a 'taken' state for the next connection.
+		m_sendRequest = false;
+		m_sendDoneSemaphore.resetI(true);
 	}
 
 	return wasOpen;
@@ -125,8 +148,15 @@ void ServerSocket::send(uint8_t* buffer, size_t size) {
 	// Wake the driver to perform the actual send
 	isrSemaphore.signal();
 
-	// Wait for this chunk to complete
-	m_sendDoneSemaphore.wait();
+	// Wait for this chunk to complete; 5s timeout guards against a driver that
+	// never fires SOCKET_MSG_SEND (which would otherwise deadlock this thread).
+	msg_t result = m_sendDoneSemaphore.wait(TIME_MS2I(5000));
+	if (result != MSG_OK) {
+		// Timeout or semaphore reset without a successful send — cancel the
+		// pending request and close the socket so callers see isReady()==false.
+		m_sendRequest = false;
+		closeSocket();
+	}
 }
 
 void ServerSocket::onSendDone() {
@@ -169,10 +199,21 @@ size_t ServerSocket::recvTimeout(uint8_t* buffer, size_t size, int timeout) {
 
 bool ServerSocket::trySendImpl() {
 	if ((m_connectedSocket != -1) && m_sendRequest) {
-		::send(m_connectedSocket, (void*)m_sendBuffer, m_sendSize, 0);
-		m_sendRequest = false;
+		int8_t result = ::send(m_connectedSocket, (void*)m_sendBuffer, m_sendSize, 0);
 
-		return true;
+		if (result == SOCK_ERR_NO_ERROR) {
+			m_sendRequest = false;
+			return true;
+		} else if (result == SOCK_ERR_BUFFER_FULL) {
+			// Driver buffers are full, retry on next helper tick
+			return false;
+		} else {
+			// Permanent error?
+			efiPrintf("WiFi: send error %d on sock %d", (int)result, m_connectedSocket);
+			// Wake up the caller so they aren't deadlocked; they'll detect the error on next operation
+			closeSocket();
+			return true;
+		}
 	}
 
 	return false;
@@ -189,9 +230,20 @@ bool ServerSocket::tryRecvImpl() {
 
 		// Apply flow control: only request more data if we guarantee we can buffer it!
 		if (space >= nextRecv) {
-			m_recvActive = true;
-			recv(m_connectedSocket, &m_recvBuf, nextRecv, 0);
-			return true;
+			int8_t result = recv(m_connectedSocket, &m_recvBuf, nextRecv, 0);
+			if (result == SOCK_ERR_NO_ERROR) {
+				m_recvActive = true;
+				return true;
+			} else if (result == SOCK_ERR_BUFFER_FULL) {
+				// Rare for recv, but retry later
+				return false;
+			} else {
+				efiPrintf("WiFi: recv error %d on sock %d", (int)result, m_connectedSocket);
+				// Treat as a fatal socket error: close now so the TS thread sees
+				// isReady()==false immediately rather than retrying every 10ms.
+				closeSocket();
+				return false;
+			}
 		}
 	}
 

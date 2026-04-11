@@ -245,13 +245,23 @@ public class LinkManager implements Closeable {
 
     public void restart() {
         ConnectionStatusLogic.INSTANCE.setValue(ConnectionStatusValue.NOT_CONNECTED);
-        close(); // Explicitly kill the connection (call connectors destructor??????)
+        close();
 
         String[] ports = getCommPorts();
-        boolean isPortAvailableAgain = Arrays.asList(ports).contains(lastTriedPort);
+        boolean isPortAvailableAgain = TcpConnector.isTcpPort(lastTriedPort) || Arrays.asList(ports).contains(lastTriedPort);
         log.info("restart isPortAvailableAgain=" + isPortAvailableAgain);
         if (isPortAvailableAgain) {
-            connect(lastTriedPort);
+            startAndConnect(lastTriedPort, new ConnectionStateListener() {
+                @Override
+                public void onConnectionFailed(String s) {
+                    log.error("Reconnect failed: " + s);
+                }
+
+                @Override
+                public void onConnectionEstablished() {
+                    log.info("Reconnected successfully");
+                }
+            });
         }
     }
 
