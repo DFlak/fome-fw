@@ -1,5 +1,11 @@
 package com.rusefi.ui;
 
+/**
+ * @see StatusWindow
+ */
 public interface StatusConsumer {
-    void append(String status);
+    StatusConsumer ANONYMOUS = (status) -> System.out.println(status);
+    StatusConsumer VOID = (status) -> {};
+
+    void logLine(String status);
 }

@@ -1044,6 +1044,12 @@ int16_t tps2Max;;"ADC", 1, 0, 0, 1023, 0
 
 	can_baudrate_e can2BaudRate;
 
+	#define ts_can_bus_e_enum "CAN1", "CAN2"
+	custom ts_can_bus_e 1 bits, U08, @OFFSET@, [0:1], @@ts_can_bus_e_enum@@
+	ts_can_bus_e tsCanBus;
+	uint32_t tsCanRxId;
+	uint32_t tsCanTxId;
+
 	#define load_override_e_enum "None", "MAP", "TPS", "Acc Pedal", "Cyl Filling %"
 	custom load_override_e 1 bits, U08, @OFFSET@, [0:2], @@load_override_e_enum@@
 	load_override_e afrOverrideMode;Override the Y axis (load) value used for the AFR table.\nAdvanced users only: If you aren't sure you need this, you probably don't need this.
@@ -1962,7 +1968,8 @@ end_struct
 #define show_test_presets true
 #define show_Frankenso_presets true
 
-#define CAN_ECU_SERIAL_RX_ID 0x100
-#define CAN_ECU_SERIAL_TX_ID 0x102
+// These are now configurable in engineConfiguration
+// #define CAN_ECU_SERIAL_RX_ID 0x100
+// #define CAN_ECU_SERIAL_TX_ID 0x102
 
 #define CAN_ECU_HW_META 0xAB1234

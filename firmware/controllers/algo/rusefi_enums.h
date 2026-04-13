@@ -518,6 +518,12 @@ typedef enum __attribute__((__packed__)) {
 	B1MBPS = 6,	  // 1Mbps
 } can_baudrate_e;
 
+enum class ts_can_bus_e : uint8_t {
+	CAN1 = 0,
+	CAN2 = 1,
+};
+
+
 typedef enum __attribute__((__packed__)) {
 	GPPWM_GreaterThan = 0,
 	GPPWM_LessThan = 1,

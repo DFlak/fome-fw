@@ -6,6 +6,8 @@ import com.rusefi.Callable;
 import com.rusefi.NamedThreadFactory;
 import com.rusefi.binaryprotocol.BinaryProtocol;
 import com.rusefi.core.EngineState;
+import com.rusefi.io.can.PCanIoStream;
+import com.rusefi.io.can.SocketCANIoStream;
 import com.rusefi.io.serial.BufferedSerialIoStream;
 import com.rusefi.io.serial.StreamConnector;
 import com.rusefi.io.tcp.TcpConnector;
@@ -68,10 +70,26 @@ public class LinkManager implements Closeable {
         commandQueue = new CommandQueue(this);
     }
 
+    /** Prefix used in port strings to select a Linux SocketCAN device, e.g. "socketcan:can0". */
+    public static final String SOCKETCAN_PREFIX = "socketcan:";
+    /** Port string used to select a PEAK PCAN-USB adapter on Windows. */
+    public static final String PCAN_PORT = "pcan";
+
     @NotNull
     public static IoStream open(String port) throws IOException {
         if (TcpConnector.isTcpPort(port)) {
             return TcpIoStream.open(port);
+        } else if (port.startsWith(SOCKETCAN_PREFIX)) {
+            String device = port.substring(SOCKETCAN_PREFIX.length());
+            SocketCANIoStream stream = SocketCANIoStream.create(device);
+            if (stream == null)
+                throw new IOException("Failed to open SocketCAN device: " + device);
+            return stream;
+        } else if (PCAN_PORT.equalsIgnoreCase(port)) {
+            PCanIoStream stream = PCanIoStream.createStream();
+            if (stream == null)
+                throw new IOException("Failed to open PCAN adapter. Check driver and cable.");
+            return stream;
         } else {
             return BufferedSerialIoStream.openPort(port);
         }

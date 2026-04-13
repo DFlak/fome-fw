@@ -686,6 +686,15 @@ constexpr inline const char* getTle8888_mode_e(tle8888_mode_e value) {
 	}
 	return "unknown";
 }
+constexpr inline const char* getTs_can_bus_e(ts_can_bus_e value) {
+	switch (value) {
+		case ts_can_bus_e::CAN1:
+			return "CAN1";
+		case ts_can_bus_e::CAN2:
+			return "CAN2";
+	}
+	return "unknown";
+}
 constexpr inline const char* getVe_override_e(ve_override_e value) {
 	switch (value) {
 		case VE_MAP:

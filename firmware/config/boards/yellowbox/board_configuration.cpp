@@ -141,8 +141,14 @@ void setBoardDefaultConfiguration() {
 
 	engineConfiguration->isSdCardEnabled = true;
 
+	engineConfiguration->canReadEnabled = true;
 	engineConfiguration->canWriteEnabled = true;
 	engineConfiguration->canBaudRate = B500KBPS;
+
+	// Default TS over CAN settings
+	engineConfiguration->tsCanBus = ts_can_bus_e::CAN1;
+	engineConfiguration->tsCanRxId = 0x100;
+	engineConfiguration->tsCanTxId = 0x102;
 }
 
 void preHalInit() {

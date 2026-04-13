@@ -1,0 +1,263 @@
+Building FOME console...
+openjdk version "21.0.10" 2026-01-20
+OpenJDK Runtime Environment (build 21.0.10+7-Ubuntu-124.04)
+OpenJDK 64-Bit Server VM (build 21.0.10+7-Ubuntu-124.04, mixed mode, sharing)
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.3.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+
+> Configure project :ecu_io
+Build file '/home/dflak/fome-fw/java_console/io/build.gradle': line 28
+Declaring dependencies using multi-string notation has been deprecated. This will fail with an error in Gradle 10. Please use single-string notation instead: "tel.schich:javacan-core:3.3.0". Consult the upgrading guide for further information: https://docs.gradle.org/9.3.0/userguide/upgrading_version_9.html#dependency_multi_string_notation
+	at build_dx0d7gx97152z0rtc6jz2fu5$_run_closure3.doCall$original(/home/dflak/fome-fw/java_console/io/build.gradle:28)
+	(Run with --stacktrace to get the full stack trace of this deprecation warning.)
+Build file '/home/dflak/fome-fw/java_console/io/build.gradle': line 29
+Declaring dependencies using multi-string notation has been deprecated. This will fail with an error in Gradle 10. Please use single-string notation instead: "tel.schich:javacan-core:3.3.0:x86_64". Consult the upgrading guide for further information: https://docs.gradle.org/9.3.0/userguide/upgrading_version_9.html#dependency_multi_string_notation
+	at build_dx0d7gx97152z0rtc6jz2fu5$_run_closure3.doCall$original(/home/dflak/fome-fw/java_console/io/build.gradle:29)
+	(Run with --stacktrace to get the full stack trace of this deprecation warning.)
+
+> Task :logging-api:compileJava UP-TO-DATE
+> Task :logging-api:processResources NO-SOURCE
+> Task :logging-api:classes UP-TO-DATE
+> Task :logging-api:jar UP-TO-DATE
+> Task :util:compileJava UP-TO-DATE
+> Task :util:processResources NO-SOURCE
+> Task :util:classes UP-TO-DATE
+> Task :util:jar UP-TO-DATE
+> Task :inifile:compileJava UP-TO-DATE
+> Task :generated:compileJava UP-TO-DATE
+> Task :logging:compileJava UP-TO-DATE
+> Task :models:compileJava UP-TO-DATE
+> Task :peak-can-basic:compileJava UP-TO-DATE
+
+> Task :ecu_io:compileJava
+/home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/io/can/IsoTpConnector.java:72: error: method combineArrays(byte[],byte[],int,int) is already defined in class IsoTpConnector
+    public static byte[] combineArrays(byte[] hdr, byte[] data, int dataOffset, int dataLength) {
+                         ^
+/home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/io/can/PCanIoStream.java:20: error: cannot find symbol
+import static com.rusefi.config.generated.Fields.CAN_ECU_SERIAL_RX_ID;
+^
+  symbol:   static CAN_ECU_SERIAL_RX_ID
+  location: class Fields
+/home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/io/can/PCanIoStream.java:21: error: cannot find symbol
+import static com.rusefi.config.generated.Fields.CAN_ECU_SERIAL_TX_ID;
+^
+  symbol:   static CAN_ECU_SERIAL_TX_ID
+  location: class Fields
+/home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/io/can/SocketCANIoStream.java:17: error: cannot find symbol
+import static com.rusefi.config.generated.Fields.CAN_ECU_SERIAL_RX_ID;
+^
+  symbol:   static CAN_ECU_SERIAL_RX_ID
+  location: class Fields
+/home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/io/can/SocketCANIoStream.java:18: error: cannot find symbol
+import static com.rusefi.config.generated.Fields.CAN_ECU_SERIAL_TX_ID;
+^
+  symbol:   static CAN_ECU_SERIAL_TX_ID
+  location: class Fields
+/home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/SimulatorExecHelper.java:25: warning: [deprecation] FileLog in com.rusefi has been deprecated
+        FileLog.MAIN.logLine("runSimulator...");
+        ^
+/home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/SimulatorExecHelper.java:28: warning: [deprecation] FileLog in com.rusefi has been deprecated
+            FileLog.MAIN.logLine("Binary size: " + binary.length());
+            ^
+/home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/SimulatorExecHelper.java:30: warning: [deprecation] FileLog in com.rusefi has been deprecated
+            FileLog.MAIN.logLine("Executing " + binary.getPath());
+            ^
+/home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/SimulatorExecHelper.java:32: warning: [deprecation] FileLog in com.rusefi has been deprecated
+            FileLog.MAIN.logLine("simulatorProcess: " + SimulatorExecHelper.simulatorProcess);
+            ^
+/home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/SimulatorExecHelper.java:36: warning: [deprecation] FileLog in com.rusefi has been deprecated
+            FileLog.MAIN.logLine("exitValue: " + simulatorProcess.exitValue());
+            ^
+/home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/SimulatorExecHelper.java:78: warning: [deprecation] FileLog in com.rusefi has been deprecated
+                    FileLog.SIMULATOR_CONSOLE.logLine(string);
+                    ^
+/home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/SimulatorExecHelper.java:90: warning: [deprecation] FileLog in com.rusefi has been deprecated
+            FileLog.MAIN.logLine("Destroying sub-process...");
+            ^
+/home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/SimulatorExecHelper.java:96: warning: [deprecation] FileLog in com.rusefi has been deprecated
+        FileLog.MAIN.logLine("startSimulator...");
+        ^
+/home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/IoUtil.java:105: warning: [deprecation] FileLog in com.rusefi has been deprecated
+        FileLog.MAIN.logLine("Sleeping " + seconds + " seconds");
+        ^
+/home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/io/can/IsoTpConnector.java:39: error: cannot find symbol
+        connector.receiveData();
+                 ^
+  symbol:   method receiveData()
+  location: variable connector of type IsoTpConnector
+/home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/io/can/PCanHelper.java:69: error: Alternatives in a multi-catch statement cannot be related by subclassing
+        } catch (ClassNotFoundException | UnsatisfiedLinkError | Exception e) {
+                                                                 ^
+  Alternative ClassNotFoundException is a subclass of alternative Exception
+/home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/io/can/PCanIoStream.java:44: error: method does not override or implement a method from a supertype
+        @Override
+        ^
+/home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/io/can/PCanIoStream.java:50: error: cannot find symbol
+    private final IsoTpConnector isoTpConnector = new IsoTpConnector(CAN_ECU_SERIAL_RX_ID) {
+                                                                     ^
+  symbol:   variable CAN_ECU_SERIAL_RX_ID
+  location: class PCanIoStream
+/home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/io/can/PCanIoStream.java:62: error: cannot find symbol
+            statusConsumer.logLine("PCAN write error: " + status);
+                          ^
+  symbol:   method logLine(String)
+  location: variable statusConsumer of type StatusConsumer
+/home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/io/can/PCanIoStream.java:83: error: cannot find symbol
+            statusConsumer.logLine("PCAN library not available. Install the PEAK PCAN driver and place PCANBasic_JNI.dll on PATH.");
+                          ^
+  symbol:   method logLine(String)
+  location: variable statusConsumer of type StatusConsumer
+/home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/io/can/PCanIoStream.java:89: error: cannot find symbol
+            statusConsumer.logLine("PCAN init failed: " + status + ". Is the PCAN-USB adapter plugged in?");
+                          ^
+  symbol:   method logLine(String)
+  location: variable statusConsumer of type StatusConsumer
+/home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/io/can/PCanIoStream.java:92: error: cannot find symbol
+        statusConsumer.logLine("PCAN stream opened on " + PCanHelper.CHANNEL);
+                      ^
+  symbol:   method logLine(String)
+  location: variable statusConsumer of type StatusConsumer
+/home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/io/can/PCanIoStream.java:120: error: cannot find symbol
+        if (rx.getID() != CAN_ECU_SERIAL_TX_ID) {
+                          ^
+  symbol:   variable CAN_ECU_SERIAL_TX_ID
+  location: class PCanIoStream
+/home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/io/can/SocketCANIoStream.java:38: error: method does not override or implement a method from a supertype
+        @Override
+        ^
+/home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/io/can/SocketCANIoStream.java:44: error: cannot find symbol
+    private final IsoTpConnector isoTpConnector = new IsoTpConnector(CAN_ECU_SERIAL_RX_ID) {
+                                                                     ^
+  symbol:   variable CAN_ECU_SERIAL_RX_ID
+  location: class SocketCANIoStream
+/home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/io/can/SocketCANIoStream.java:108: error: cannot find symbol
+            if (rx.id != CAN_ECU_SERIAL_TX_ID) {
+                         ^
+  symbol:   variable CAN_ECU_SERIAL_TX_ID
+  location: class SocketCANIoStream
+17 errors
+9 warnings
+
+> Task :ecu_io:compileJava FAILED
+
+[Incubating] Problems report is available at: file:///home/dflak/fome-fw/java_tools/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':ecu_io:compileJava'.
+> Compilation failed; see the compiler output below.
+  /home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/io/can/PCanHelper.java:69: error: Alternatives in a multi-catch statement cannot be related by subclassing
+          } catch (ClassNotFoundException | UnsatisfiedLinkError | Exception e) {
+                                                                   ^
+    Alternative ClassNotFoundException is a subclass of alternative Exception
+  /home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/SimulatorExecHelper.java:25: warning: [deprecation] FileLog in com.rusefi has been deprecated
+          FileLog.MAIN.logLine("runSimulator...");
+          ^
+  /home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/SimulatorExecHelper.java:28: warning: [deprecation] FileLog in com.rusefi has been deprecated
+              FileLog.MAIN.logLine("Binary size: " + binary.length());
+              ^
+  /home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/SimulatorExecHelper.java:30: warning: [deprecation] FileLog in com.rusefi has been deprecated
+              FileLog.MAIN.logLine("Executing " + binary.getPath());
+              ^
+  /home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/SimulatorExecHelper.java:32: warning: [deprecation] FileLog in com.rusefi has been deprecated
+              FileLog.MAIN.logLine("simulatorProcess: " + SimulatorExecHelper.simulatorProcess);
+              ^
+  /home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/SimulatorExecHelper.java:36: warning: [deprecation] FileLog in com.rusefi has been deprecated
+              FileLog.MAIN.logLine("exitValue: " + simulatorProcess.exitValue());
+              ^
+  /home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/SimulatorExecHelper.java:78: warning: [deprecation] FileLog in com.rusefi has been deprecated
+                      FileLog.SIMULATOR_CONSOLE.logLine(string);
+                      ^
+  /home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/SimulatorExecHelper.java:90: warning: [deprecation] FileLog in com.rusefi has been deprecated
+              FileLog.MAIN.logLine("Destroying sub-process...");
+              ^
+  /home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/SimulatorExecHelper.java:96: warning: [deprecation] FileLog in com.rusefi has been deprecated
+          FileLog.MAIN.logLine("startSimulator...");
+          ^
+  /home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/IoUtil.java:105: warning: [deprecation] FileLog in com.rusefi has been deprecated
+          FileLog.MAIN.logLine("Sleeping " + seconds + " seconds");
+          ^
+  /home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/io/can/PCanIoStream.java:20: error: cannot find symbol
+  import static com.rusefi.config.generated.Fields.CAN_ECU_SERIAL_RX_ID;
+  ^
+    symbol:   static CAN_ECU_SERIAL_RX_ID
+    location: class Fields
+  /home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/io/can/PCanIoStream.java:21: error: cannot find symbol
+  import static com.rusefi.config.generated.Fields.CAN_ECU_SERIAL_TX_ID;
+  ^
+    symbol:   static CAN_ECU_SERIAL_TX_ID
+    location: class Fields
+  /home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/io/can/SocketCANIoStream.java:17: error: cannot find symbol
+  import static com.rusefi.config.generated.Fields.CAN_ECU_SERIAL_RX_ID;
+  ^
+    symbol:   static CAN_ECU_SERIAL_RX_ID
+    location: class Fields
+  /home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/io/can/SocketCANIoStream.java:18: error: cannot find symbol
+  import static com.rusefi.config.generated.Fields.CAN_ECU_SERIAL_TX_ID;
+  ^
+    symbol:   static CAN_ECU_SERIAL_TX_ID
+    location: class Fields
+  /home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/io/can/PCanIoStream.java:50: error: cannot find symbol
+      private final IsoTpConnector isoTpConnector = new IsoTpConnector(CAN_ECU_SERIAL_RX_ID) {
+                                                                       ^
+    symbol:   variable CAN_ECU_SERIAL_RX_ID
+    location: class PCanIoStream
+  /home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/io/can/PCanIoStream.java:120: error: cannot find symbol
+          if (rx.getID() != CAN_ECU_SERIAL_TX_ID) {
+                            ^
+    symbol:   variable CAN_ECU_SERIAL_TX_ID
+    location: class PCanIoStream
+  /home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/io/can/SocketCANIoStream.java:44: error: cannot find symbol
+      private final IsoTpConnector isoTpConnector = new IsoTpConnector(CAN_ECU_SERIAL_RX_ID) {
+                                                                       ^
+    symbol:   variable CAN_ECU_SERIAL_RX_ID
+    location: class SocketCANIoStream
+  /home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/io/can/SocketCANIoStream.java:108: error: cannot find symbol
+              if (rx.id != CAN_ECU_SERIAL_TX_ID) {
+                           ^
+    symbol:   variable CAN_ECU_SERIAL_TX_ID
+    location: class SocketCANIoStream
+  /home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/io/can/PCanIoStream.java:44: error: method does not override or implement a method from a supertype
+          @Override
+          ^
+  /home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/io/can/SocketCANIoStream.java:38: error: method does not override or implement a method from a supertype
+          @Override
+          ^
+  /home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/io/can/IsoTpConnector.java:39: error: cannot find symbol
+          connector.receiveData();
+                   ^
+    symbol:   method receiveData()
+    location: variable connector of type IsoTpConnector
+  /home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/io/can/PCanIoStream.java:62: error: cannot find symbol
+              statusConsumer.logLine("PCAN write error: " + status);
+                            ^
+    symbol:   method logLine(String)
+    location: variable statusConsumer of type StatusConsumer
+  /home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/io/can/PCanIoStream.java:83: error: cannot find symbol
+              statusConsumer.logLine("PCAN library not available. Install the PEAK PCAN driver and place PCANBasic_JNI.dll on PATH.");
+                            ^
+    symbol:   method logLine(String)
+    location: variable statusConsumer of type StatusConsumer
+  /home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/io/can/PCanIoStream.java:89: error: cannot find symbol
+              statusConsumer.logLine("PCAN init failed: " + status + ". Is the PCAN-USB adapter plugged in?");
+                            ^
+    symbol:   method logLine(String)
+    location: variable statusConsumer of type StatusConsumer
+  /home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/io/can/PCanIoStream.java:92: error: cannot find symbol
+          statusConsumer.logLine("PCAN stream opened on " + PCanHelper.CHANNEL);
+                        ^
+    symbol:   method logLine(String)
+    location: variable statusConsumer of type StatusConsumer
+  /home/dflak/fome-fw/java_console/io/src/main/java/com/rusefi/io/can/IsoTpConnector.java:72: error: method combineArrays(byte[],byte[],int,int) is already defined in class IsoTpConnector
+      public static byte[] combineArrays(byte[] hdr, byte[] data, int dataOffset, int dataLength) {
+                           ^
+  17 errors
+  9 warnings
+
+* Try:
+> Check your code and dependencies to fix the compilation error(s)
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+
+BUILD FAILED in 24s
+10 actionable tasks: 1 executed, 9 up-to-date

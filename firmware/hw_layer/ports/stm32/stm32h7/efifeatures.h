@@ -28,6 +28,13 @@
 // H7 has dual bank, so flash on its own (low priority) thread so as to not block any other operations
 #define EFI_FLASH_WRITE_THREAD TRUE
 
+// Enable CAN-to-TunerStudio/console bridge (ISO-TP over CAN)
+// Uses CAN_ECU_SERIAL_RX_ID / CAN_ECU_SERIAL_TX_ID from fome_config.txt (defaults 0x100 / 0x102)
+// Override those in your board's prepend.txt if they conflict with existing bus traffic
+#ifndef EFI_CAN_SERIAL
+#define EFI_CAN_SERIAL TRUE
+#endif
+
 #undef ENABLE_PERF_TRACE
 #define ENABLE_PERF_TRACE TRUE
 

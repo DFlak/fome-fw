@@ -16,10 +16,17 @@ tasks.withType(Test) {
 dependencies {
     api project(':models')
     api project(':util')
+    api project(':peak-can-basic')
 
     implementation global_libs.jSerialComm
     implementation global_libs.jcip
     implementation project(':logging')
+
+    // SocketCAN support (Linux only). javacan-core uses JNI to talk to the kernel SocketCAN layer.
+    // The x86_64 classifier includes the pre-built native .so for amd64 Linux.
+    // For aarch64 (e.g. Raspberry Pi), add classifier: 'aarch64' instead.
+    implementation "tel.schich:javacan-core:3.3.0"
+    implementation "tel.schich:javacan-core:3.3.0:x86_64"
 
     // junit 4.13 does not mix well with httpclient :(
     testImplementation 'junit:junit:4.8.2'
