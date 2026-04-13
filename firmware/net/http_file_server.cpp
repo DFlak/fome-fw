@@ -26,7 +26,9 @@ void waitForTsListening();
 
 static constexpr uint16_t HTTP_PORT = 80;
 static constexpr size_t MAX_PATH_LEN = 128;
-static constexpr size_t FILE_BUF_SIZE = SOCKET_BUFFER_MAX_LENGTH;
+// 16 × 512-byte SD sectors: aligns to FatFS sector boundaries so the SDMMC
+// DMA can fill the buffer directly without an intermediate copy.
+static constexpr size_t FILE_BUF_SIZE = 8192;
 
 // ---------------------------------------------------------------------------
 // Static buffers — kept off the stack.  Only one HTTP request at a time.
@@ -35,7 +37,7 @@ static constexpr size_t FILE_BUF_SIZE = SOCKET_BUFFER_MAX_LENGTH;
 struct HttpStorage {
 	FIL file;
 	uint8_t reqBuf[2048]; // Generous size to handle massive browser headers
-	uint8_t fileBuf[FILE_BUF_SIZE * 2]; // 2800 bytes
+	uint8_t fileBuf[FILE_BUF_SIZE];
 	uint8_t httpOut[SOCKET_BUFFER_MAX_LENGTH];
 };
 
@@ -912,16 +914,22 @@ public:
 
 		while (true) {
 			if (!httpServer.hasConnectedSocket()) {
-				chThdSleepMilliseconds(50);
+				// Short poll interval so we notice new connections quickly.
+				// Keeping this small also reduces the window during which a
+				// second browser connection could arrive and be rejected while
+				// the first one sits pending.
+				chThdSleepMilliseconds(5);
 				continue;
 			}
 
-			chThdSleepMilliseconds(20);
+			// Set busy immediately — no sleep before this — so that any
+			// connection arriving between now and handleRequest is rejected
+			// rather than silently replacing the one we are about to serve.
 			httpServer.setBusy(true);
 			handleRequest(httpServer);
 			httpServer.setBusy(false);
 			httpServer.closeSocket();
-			chThdSleepMilliseconds(20);
+			chThdSleepMilliseconds(5);
 		}
 	}
 };

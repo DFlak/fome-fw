@@ -74,3 +74,4 @@ firmware/config/boards/yellowbox/README.md
 firmware/config/boards/yellowbox/pinmap.txt
 firmware/hw_layer/mass_storage/ramdisk_image_compressed.h
 firmware/hw_layer/mass_storage/ramdisk_image.h
+CAN_TUNERSTUDIO_NOTES.md

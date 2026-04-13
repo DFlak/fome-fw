@@ -20,11 +20,15 @@ struct SdLogBufferWriter;
 /**
  * Shared HTTP server buffers.
  * Placed here to ensure they are inside the non-cacheable MPU region on H7.
+ *
+ * fileBuf is sized as an exact multiple of 512 (one SD sector) so FatFS can
+ * hand the buffer directly to the SDMMC DMA without an intermediate sector
+ * copy.  8192 = 16 sectors — reduces per-read overhead vs the old 2800 bytes.
  */
 struct HttpBuffer {
 	FIL file;
 	uint8_t reqBuf[2048];
-	uint8_t fileBuf[2800];
+	uint8_t fileBuf[8192];
 	uint8_t httpOut[1400];
 };
 #endif // EFI_WIFI

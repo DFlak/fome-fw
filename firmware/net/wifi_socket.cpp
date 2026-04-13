@@ -27,21 +27,26 @@ void ServerSocket::startListening(const sockaddr_in& addr) {
 }
 
 void ServerSocket::onAccept(int connectedSocket) {
-	// If we're busy handling a request (e.g. HTTP POST), reject the new connection.
-	// This prevents clobbering the active socket mid-send.
+	// Reject if the handler thread is actively processing a request.
 	if (m_busy) {
+		efiPrintf("WiFi: [%s] Rejecting sock %d (busy)", m_name, connectedSocket);
 		close(connectedSocket);
 		return;
 	}
 
-	// If we already have a socket, close the old one before accepting the new one.
-	// This prevents leaking hardware sockets in the ATWINC1500 and wakes up any
-	// threads stuck in a pending send on the old link.
-	efiPrintf("WiFi: [%s] Accepting sock %d (replaces %d)", m_name, connectedSocket, (int)m_connectedSocket);
-
+	// If a connection is already pending (accepted but not yet handled), reject
+	// the new one rather than replacing it.  Replacing would silently drop the
+	// pending request before the handler thread has had a chance to serve it —
+	// this is the root cause of the "sent back an empty page" browser error.
+	// The rejected connection will be retried by the browser once the current
+	// one is fully served and m_connectedSocket is cleared.
 	if (m_connectedSocket != -1) {
-		closeSocket();
+		efiPrintf("WiFi: [%s] Rejecting sock %d (pending %d)", m_name, connectedSocket, (int)m_connectedSocket);
+		close(connectedSocket);
+		return;
 	}
+
+	efiPrintf("WiFi: [%s] Accepting sock %d", m_name, connectedSocket);
 
 	m_connectedSocket = connectedSocket;
 	m_sendRequest = false;
