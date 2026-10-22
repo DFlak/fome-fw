@@ -16,7 +16,7 @@ on:
 
 jobs:
   build-firmware:
-    runs-on: ubuntu-latest-selfhost
+    runs-on: [self-hosted, dflak]
 
     strategy:
       # Let all builds finish even if one fails early
@@ -155,16 +155,12 @@ jobs:
 
     - name: Set run condition variables
       run: |
-        if [ "${{github.repository}}" = "FOME-Tech/fome-fw" ]\
-        && [ "${{github.event_name}}" = "push" ]\
-        && [ "${{github.ref}}" = "refs/heads/master" ]\
+        if [ "${{github.repository}}" = "DFlak/fome-fw" ]\
         || [ "${{toJSON(inputs.do_upload)}}" = "true" ]; then
           echo "full=true" >> $GITHUB_ENV
           echo "upload=true" >> $GITHUB_ENV
-        elif [ "${{github.event_name}}" = "push" ]\
-        && [ "${{github.ref}}" = "refs/heads/master" ]; then
-          echo "full=true" >> $GITHUB_ENV
         fi
+
 
     - uses: actions/checkout@v7
       with:
